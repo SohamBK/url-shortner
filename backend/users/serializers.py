@@ -51,3 +51,31 @@ class VerifyOtpSerializer(serializers.Serializer):
         
         data['user'] = user
         return data
+    
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+# class PasswordResetConfirmSerializer(serializers.Serializer):
+#     password = serializers.CharField(write_only=True)
+
+class ResetPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    confirm_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    def validate(self, data):
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')
+
+        # Check if both passwords match
+        if password != confirm_password:
+            raise serializers.ValidationError("Passwords do not match.")
+        return data
+
+    def save(self, uid, token):
+        try:
+            user = User.objects.get(pk=uid)
+            user.set_password(self.validated_data['password'])
+            user.save()
+            return user
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid user.")

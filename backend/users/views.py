@@ -9,10 +9,14 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django.core.mail import EmailMessage, send_mail
 from django.conf import settings
+from django.urls import reverse
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
 from datetime import timedelta
 from django.utils import timezone
-from .serializers import RegisterSerializer, VerifyOtpSerializer
+from .serializers import RegisterSerializer, VerifyOtpSerializer, PasswordResetSerializer, ResetPasswordSerializer
 from .serializers import LoginSerializer
 from .models import Otp
 
@@ -29,7 +33,6 @@ class RegisterView(generics.CreateAPIView):
         user = self.perform_create(serializer)
 
         # Generate OTP
-        otp_code = self.generate_otp()
         expires_at = timezone.now() + timedelta(minutes=5)
         Otp.objects.create(user=user, otp_code=otp_code, expires_at=expires_at)
         try:
@@ -113,4 +116,68 @@ class LoginView(APIView):
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = User.objects.filter(email=email).first()
+
+            if user:
+                token_generator = PasswordResetTokenGenerator()
+                token = token_generator.make_token(user)
+                reset_url = request.build_absolute_uri(
+                    reverse('reset-password', args=[user.pk, token])
+                )
+
+                # send email
+                try:
+                    send_mail(
+                        'Reset Password',
+                        f'Click the link to reset your password: {reset_url}',
+                        'from@example.com',
+                        [email],
+                        fail_silently=False
+                    )
+
+                    return Response({
+                        'message' : 'Password reset link sent to your registered mail.'
+                    }, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    logger.error(f'Error while sending password reset link: {e}')
+                    return Response({
+                        'error' : 'There wan error while sending password reset link to your email. Please try again later.'
+                    }, status=status.HTTP_500_BAD_REQUEST)
+                
+            return Response({
+                'error' : 'Email not found.'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request, uid, token, *args, **kwargs):
+        serializer = ResetPasswordSerializer(data=request.data)
+
+        if serializer.is_valid():
+            # Since uid is a UUID, directly query using pk=uid
+            try:
+                user = User.objects.get(pk=uid)
+            except User.DoesNotExist:
+                return Response({"detail": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if the token is valid
+            if not default_token_generator.check_token(user, token):
+                return Response({"detail": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Save the new password
+            serializer.save(uid, token)
+            return Response({"detail": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
