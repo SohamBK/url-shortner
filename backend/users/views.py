@@ -1,3 +1,4 @@
+import random
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate
@@ -6,8 +7,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer
+from datetime import timedelta
+from django.utils import timezone
+from .serializers import RegisterSerializer, VerifyOtpSerializer
 from .serializers import LoginSerializer
+from .models import Otp
 
 User = get_user_model()
 
@@ -20,23 +24,60 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = self.perform_create(serializer)
 
-        # Generate JWT token
-        tokens = self.get_tokens_for_user(user)
+        # Generate OTP
+        otp_code = self.generate_otp()
+        expires_at = timezone.now() + timedelta(minutes=5)
+        Otp.objects.create(user=user, otp_code=otp_code, expires_at=expires_at)
+        self.send_otp_email(user.email, otp_code)
 
         return Response({
-            'refresh': str(tokens['refresh']),
-            'access': str(tokens['access']),
-        }, status=status.HTTP_201_CREATED)
+            'message' : 'Otp sent to your email. Please verify to complete registration process',
+        }, status = status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
         return serializer.save()
+    
+    def generate_otp(self):
+        return str(random.randint(100000,999999))
 
-    def get_tokens_for_user(self, user):
+    def send_otp_email(self, email, otp_code):
+        subject = "URL Shrotner Verification Code"
+        message = f"Your OTP code is {otp_code}. It is valid for 5 minutes."
+        from django.core.mail import send_mail
+        send_mail(subject, message, 'sohambalekar123@gmail.com', [email])    
+
+class VerifyOtpview(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = VerifyOtpSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data['user']
+        otp_code = serializer.validated_data['otp_code']
+
+        try:
+            otp_entry = Otp.objects.get(user=user, otp_code=otp_code)
+        except Otp.DoesNotExist:
+            return Response({
+                'detail' : 'Invalid OTP'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not otp_entry.is_valid():
+            return Response({'detail': 'OTP expired'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.is_active = True
+        user.save()
+
+        otp_entry.delete()
+
         refresh = RefreshToken.for_user(user)
-        return {
-            'refresh': refresh,
-            'access': refresh.access_token,
-        }
+
+        return Response({
+            'message': 'OTP verified successfully. Your account is now active.',
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_200_OK)
     
 class LoginView(APIView):
     permission_classes = [AllowAny]  # Allow unauthenticated users to access
