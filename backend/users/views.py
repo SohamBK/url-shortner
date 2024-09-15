@@ -1,4 +1,5 @@
 import random
+import logging
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate
@@ -6,6 +7,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
+from django.core.mail import EmailMessage, send_mail
+from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
 from django.utils import timezone
@@ -14,6 +17,7 @@ from .serializers import LoginSerializer
 from .models import Otp
 
 User = get_user_model()
+logger = logging.getLogger('url_shortner')
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
@@ -28,7 +32,14 @@ class RegisterView(generics.CreateAPIView):
         otp_code = self.generate_otp()
         expires_at = timezone.now() + timedelta(minutes=5)
         Otp.objects.create(user=user, otp_code=otp_code, expires_at=expires_at)
-        self.send_otp_email(user.email, otp_code)
+        try:
+            self.send_otp_email(user.email, otp_code)
+        except (EmailMessage.Error, smtplib.SMTPException) as e:
+            # Handle email sending error gracefully
+            logger.error(f'An error occurred: {e}')
+            return Response({
+                'message': 'An error occurred while sending the OTP. Please try again later.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
             'message' : 'Otp sent to your email. Please verify to complete registration process',
@@ -43,8 +54,9 @@ class RegisterView(generics.CreateAPIView):
     def send_otp_email(self, email, otp_code):
         subject = "URL Shrotner Verification Code"
         message = f"Your OTP code is {otp_code}. It is valid for 5 minutes."
-        from django.core.mail import send_mail
-        send_mail(subject, message, 'sohambalekar123@gmail.com', [email])    
+        email = EmailMessage(subject=subject, body=message, from_email=settings.EMAIL_HOST_USER, to=[email])
+        email.send(fail_silently=False)
+            
 
 class VerifyOtpview(APIView):
     permission_classes = [AllowAny]
