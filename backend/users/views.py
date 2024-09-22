@@ -166,7 +166,6 @@ class ResetPasswordView(APIView):
         serializer = ResetPasswordSerializer(data=request.data)
 
         if serializer.is_valid():
-            # Since uid is a UUID, directly query using pk=uid
             try:
                 user = User.objects.get(pk=uid)
             except User.DoesNotExist:
