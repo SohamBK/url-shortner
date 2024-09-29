@@ -1,3 +1,4 @@
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
 from rest_framework import generics 
 from rest_framework.response import Response
@@ -9,11 +10,10 @@ from .models import shortnedURL
 from .serializers import ShortnedUrlSerializer
 
 class CreateShortUrlView(APIView):
-    serializer_class = ShortnedUrlSerializer
-    permission_classes = [permission.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = ShortnedUrlSerializer(data=request.data,  context={'request': request})
         serializer.is_valid(raise_exception=True)
         short_url_instance = serializer.save()
 
