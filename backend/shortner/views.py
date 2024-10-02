@@ -39,13 +39,6 @@ class RedirectUrlView(APIView):
             return Response({
                 'error' : 'The shortned url is expired'
             }, status=status.HTTP_410_GONE)
-        
-        # url_instance.analytics.create(
-        #     ip_address=self.get_client_ip(request),
-        #     user_agent=request.META.get('HTTP_USER_AGENT', ''),
-        #     referrer=request.META.get('HTTP_REFERER', ''),
-        #     country=self.get_country_from_ip()     
-        # )
 
         client_ip = self.get_client_ip(request)
         self.log_analytics(url_instance, client_ip, request)
@@ -69,17 +62,17 @@ class RedirectUrlView(APIView):
                 ip_address=client_ip,
                 user_agent=request.META.get('HTTP_USER_AGENT', ''),
                 referrer=request.META.get('HTTP_REFERER', ''),
-                country=location_info.get('country', 'Unknown')  # Default to 'Unknown'
+                country=location_info.get('country', 'Unknown')
             )
         except Exception as e:
             # Log the error to a logging system, but don't disrupt the redirect
-            print(f"Error logging analytics: {e}")  # Replace with proper logging in production
+            print(f"Error logging analytics: {e}")
 
     def get_location_info(self, ip):
         """Fetch location info from ipinfo.io"""
         try:
             response = requests.get(f'https://ipinfo.io/{ip}/json')
-            response.raise_for_status()  # Raise an error for bad responses
-            return response.json()  # Return the parsed JSON response
+            response.raise_for_status()
+            return response.json()
         except requests.RequestException:
             return {}
