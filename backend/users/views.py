@@ -39,7 +39,7 @@ class RegisterView(generics.CreateAPIView):
             self.send_otp_email(user.email, otp_code)
         except (EmailMessage.Error, smtplib.SMTPException) as e:
             # Handle email sending error gracefully
-            logger.error(f'An error occurred: {e}')
+            logger.error(f'An error occurred while registering: {e}')
             return Response({
                 'message': 'An error occurred while sending the OTP. Please try again later.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
