@@ -1,7 +1,7 @@
 from django.urls import path
-from users.views import RegisterView, LoginView, VerifyOtpview, ForgotPasswordView, ResetPasswordView
-from .views import CreateShortUrlView, RedirectUrlView
+from .views import CreateShortUrlView, RedirectUrlView, UserShortnedUrlListView
 
 urlpatterns = [
     path('shorten/', CreateShortUrlView.as_view(), name='create-short-url'),
+    path('user/urls/', UserShortnedUrlListView.as_view(), name='user_urls'),
 ]

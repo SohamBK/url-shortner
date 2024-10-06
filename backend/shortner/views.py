@@ -1,7 +1,9 @@
-import requests
 import logging
+import requests
 from django.conf import settings
+from django.utils import timezone
 from rest_framework import status
+from django.db.models import Count
 from rest_framework import generics 
 from django.shortcuts import render
 from rest_framework.views import APIView
@@ -108,3 +110,38 @@ class RedirectUrlView(APIView):
             return response.json()
         except requests.RequestException:
             return {}
+        
+class UserShortnedUrlListView(APIView):
+    """
+    List all urls created by a user
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        urls = shortnedURL.objects.filter(user=user)
+
+        if urls is None:
+            return Response([], status=status.HTTP_200_OK)
+        
+        is_active=request.query_params.get('is_active') # True or False
+        is_expired=request.query_params.get('is_expired') # True or False
+        sort_by=request.query_params.get('sort_by') #most_used, created_at
+
+        if is_active is not None:
+            urls = urls.filter(is_active=is_active.lower == 'true')
+
+        if is_expired is not None:
+            if is_expired.lower == 'true':
+                urls = urls.filter(expires_at__lt=timezone.now())
+            else:
+                urls = urls.filter(expires_at__gte=timezone.now())
+
+        if sort_by == 'created_at':
+            urls = urls.order_by('-created_at')
+        elif sort_by == 'most_used':
+            urls = urls.annotate(num_hits=Count('analytics')).order_by('-num_hits')
+
+        # Serialize the results
+        serializer = ShortnedUrlSerializer(urls, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

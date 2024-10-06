@@ -5,8 +5,9 @@ import random, string
 class ShortnedUrlSerializer(serializers.ModelSerializer):
     class Meta:
         model = shortnedURL
-        fields = ['original_url', 'expires_at']
-
+        fields = ['id', 'original_url', 'short_code', 'expires_at', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'short_code', 'created_at', 'updated_at']
+        
     def create(self, validated_data):
         short_code = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
 
