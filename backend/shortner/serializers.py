@@ -17,3 +17,10 @@ class ShortnedUrlSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         return shortnedURL.objects.create(user=user, short_code=short_code, **validated_data)
 
+    def validate(self, data):
+        if self.instance and self.instance.is_expired():
+            raise serializers.ValidationError('Cannot update expired urls')
+        else:
+            return data
+
+

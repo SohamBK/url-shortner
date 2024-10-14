@@ -145,3 +145,33 @@ class UserShortnedUrlListView(APIView):
         # Serialize the results
         serializer = ShortnedUrlSerializer(urls, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class ShortnedUrlUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, *args, **kwargs):
+        url_instance = get_object_or_404(shortnedURL, pk=pk, user=request.user)
+
+        serializer = ShortnedUrlSerializer(url_instance, request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ShortnedUrlDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        url_instance = get_object_or_404(shortnedURL, pk=pk, user=request.user)
+
+        short_code = url_instance.short_code
+
+        url_instance.delete()
+
+        UrlCacheService.remove_cached_url(short_code)
+
+        return Response({
+            'message' : 'Url deleted successfully.'
+        }, status = status.HTTP_204_NO_CONTENT)
