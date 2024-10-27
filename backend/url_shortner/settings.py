@@ -59,10 +59,7 @@ INSTALLED_APPS = [
 
     'users',
     'shortner',
-<<<<<<< HEAD
     'analytics'
-=======
->>>>>>> d6d8f974e045288ec0d0cb69b8bf8a7ad31d5160
 ]
 
 MIDDLEWARE = [

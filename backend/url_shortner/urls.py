@@ -17,11 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from shortner.views import RedirectUrlView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/', include('users.urls')),
     path('api/url-shortner/', include('shortner.urls')),
-
+    path('api/url-analytics/', include('analytics.urls')),
     # Short code redirection at root level
     path('<str:short_code>/', RedirectUrlView.as_view(), name='redirect-url'),
 ]
