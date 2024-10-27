@@ -19,6 +19,7 @@ from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_URL = 'http://127.0.0.1:8000'  # Local development URL
 
 env = environ.Env(
     DEBUG = (bool, False)
@@ -58,7 +59,10 @@ INSTALLED_APPS = [
 
     'users',
     'shortner',
+<<<<<<< HEAD
     'analytics'
+=======
+>>>>>>> d6d8f974e045288ec0d0cb69b8bf8a7ad31d5160
 ]
 
 MIDDLEWARE = [
@@ -216,3 +220,17 @@ LOGGING = {
         },
     },
 }
+
+#Settings for redis cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/0',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379 
