@@ -23,6 +23,8 @@ urlpatterns = [
     path('api/user/', include('users.urls')),
     path('api/url-shortner/', include('shortner.urls')),
     path('api/analytics/', include('analytics.urls')),
+    path('admin-panel/', include('admin_panel.urls')),
+    
     # Short code redirection at root level
     path('<str:short_code>/', RedirectUrlView.as_view(), name='redirect-url'),
 ]
