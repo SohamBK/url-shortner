@@ -59,6 +59,7 @@ INSTALLED_APPS = [
 
     'users',
     'shortner',
+    'analytics'
 ]
 
 MIDDLEWARE = [

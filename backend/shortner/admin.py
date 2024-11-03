@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import shortnedURL, URLAnalytics
+from .models import shortnedURL
 
 @admin.register(shortnedURL)
 class ShortenedURLAdmin(admin.ModelAdmin):
@@ -8,9 +8,9 @@ class ShortenedURLAdmin(admin.ModelAdmin):
     list_filter = ('is_active', 'expires_at')
     date_hierarchy = 'created_at'
 
-@admin.register(URLAnalytics)
-class URLAnalyticsAdmin(admin.ModelAdmin):
-    list_display = ('url', 'timestamp', 'ip_address', 'country', 'platform')
-    search_fields = ('url__short_code', 'ip_address', 'country', 'platform')
-    list_filter = ('timestamp', 'country', 'platform')
-    date_hierarchy = 'timestamp'
+# @admin.register(URLAnalytics)
+# class URLAnalyticsAdmin(admin.ModelAdmin):
+#     list_display = ('url', 'timestamp', 'ip_address', 'country', 'platform')
+#     search_fields = ('url__short_code', 'ip_address', 'country', 'platform')
+#     list_filter = ('timestamp', 'country', 'platform')
+#     date_hierarchy = 'timestamp'
