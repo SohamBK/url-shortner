@@ -1,0 +1,18 @@
+ame: Release to Preprod Rule
+
+on:
+  pull_request:
+    branches:
+      - preprod  # Trigger when a pull request targets preprod
+
+jobs:
+  validate-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Source Branch
+        run: |
+          if [[ "${{ github.event.pull_request.head.ref }}" != "release" ]]; then
+            echo "Only merges from release to preprod are allowed."
+            exit 1
+          fi
