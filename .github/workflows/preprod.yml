@@ -1,0 +1,45 @@
+ame: Promote to PREPROD
+
+on:
+  workflow_dispatch: # Manual trigger for promotion
+    inputs:
+      ref:
+        description: 'Git Ref (branch or tag) to deploy'
+        required: true
+        default: 'release' # Default to the release branch
+      image_tag:
+        description: 'Docker Image Tag to deploy (e.g., qat-sha)'
+        required: false # Optional, if image tag is derived or not used
+
+  # Optional: Trigger automatically after QAT deployment success
+  # workflow_run:
+  #   workflows: ["Build and Deploy to QAT"] # Name of the QAT workflow
+  #   types:
+  #     - completed
+  #   branches:
+  #     - release # Ensure it runs only for the release branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: PREPROD # Define a PREPROD environment in GitHub for secrets/variables/approvals
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.ref || github.ref }} # Use input ref or current ref
+
+    - name: Deploy to PREPROD
+      run: |
+        echo "Promoting application to PREPROD environment..."
+        # Add your specific deployment commands here.
+        # This could involve:
+        # - Pulling the specific Docker image (e.g., from QAT stage):
+        #   docker pull my-django-app:${{ github.event.inputs.image_tag || 'latest' }}
+        # - Updating Kubernetes deployment:
+        #   kubectl config use-context my-k8s-cluster-preprod
+        #   kubectl set image deployment/my-app my-container=my-django-app:${{ github.event.inputs.image_tag || 'latest' }} -n my-namespace
+        # - Running Ansible playbooks:
+        #   ansible-playbook deploy_preprod.yml
+        echo "Deployment to PREPROD completed."
