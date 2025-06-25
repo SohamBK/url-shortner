@@ -1,0 +1,49 @@
+ame: Build and Deploy to QAT
+
+on:
+  push:
+    branches:
+      - release # Trigger when changes are pushed to the 'release' branch
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    environment: QAT # Define a QAT environment in GitHub for secrets/variables
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9' # Example Python version
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Django tests
+      run: |
+        python manage.py test
+
+    - name: Build Docker image
+      run: |
+        docker build -t my-django-app:qat-${{ github.sha }} .
+        echo "Docker image built: my-django-app:qat-${{ github.sha }}"
+
+    - name: Deploy to QAT
+      run: |
+        echo "Deploying application to QAT environment..."
+        # Add your specific deployment commands here.
+        # This could involve:
+        # - Pushing Docker image to a registry (e.g., ECR, GCR, Docker Hub):
+        #   docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+        #   docker push my-django-app:qat-${{ github.sha }}
+        # - Updating Kubernetes deployment:
+        #   kubectl config use-context my-k8s-cluster-qat
+        #   kubectl set image deployment/my-app my-container=my-django-app:qat-${{ github.sha }} -n my-namespace
+        # - SSH and running deployment scripts:
+        #   ssh -i ~/.ssh/id_rsa user@qat-server "cd /path/to/app && git pull && docker-compose up -d"
+        echo "Deployment to QAT completed."
