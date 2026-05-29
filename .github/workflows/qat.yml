@@ -1,0 +1,18 @@
+ame: DEV to Release Rule
+
+on:
+  pull_request:
+    branches:
+      - release  # Trigger when a pull request targets release
+
+jobs:
+  validate-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Source Branch
+        run: |
+          if [[ "${{ github.event.pull_request.head.ref }}" != "DEV" ]]; then
+            echo "Only merges from DEV to release are allowed."
+            exit 1
+          fi
